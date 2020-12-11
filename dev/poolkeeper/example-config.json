@@ -1,0 +1,29 @@
+
+{
+  "poolkeeper": {
+    "tasks": [
+      {
+        "name": "tieSystemPodsToServicesPool",
+        "interval": "10m",
+        "patchDeploymentAffinity": {
+          "namespace": "kube-system",
+          "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+              "nodeSelectorTerms": [
+                {
+                  "matchExpressions": [
+                    {
+                      "key": "cloud.google.com/gke-nodepool",
+                      "operator": "In",
+                      "values": ["services"]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

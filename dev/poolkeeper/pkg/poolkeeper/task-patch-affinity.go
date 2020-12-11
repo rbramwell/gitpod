@@ -1,0 +1,58 @@
+package poolkeeper
+
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+
+	log "github.com/sirupsen/logrus"
+)
+
+// PatchDeploymentAffinity applies a NodeAffinity to all deployments of a namespace
+type PatchDeploymentAffinity struct {
+	// Namespace specifies which namespace's deployments should be patched
+	Namespace string `json:"namespace"`
+
+	// NodeAffinity is applied to all specified deployments
+	NodeAffinity *corev1.NodeAffinity `json:"nodeAffinity"`
+}
+
+func (pa *PatchDeploymentAffinity) run(clientset *kubernetes.Clientset) {
+	deploymentsList, err := clientset.AppsV1().Deployments(pa.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Errorf("unable to list deployments", err)
+		return
+	}
+	var deploymentsToPatch []*appsv1.Deployment
+	for _, dep := range deploymentsList.Items {
+		deployment := dep
+		affinity := deployment.Spec.Template.Spec.Affinity
+		if affinity == nil || !reflect.DeepEqual(affinity.NodeAffinity, pa.NodeAffinity) {
+			deploymentsToPatch = append(deploymentsToPatch, &deployment)
+		}
+	}
+	log.Debugf("found %d deployments to patch", len(deploymentsToPatch))
+
+	nodeAffinityBytes, err := json.Marshal(pa.NodeAffinity)
+	if err != nil {
+		log.Errorf("error marshalling NodeAffinity", err)
+		return
+	}
+	patch := fmt.Sprintf(`{"spec": { "template": { "spec": { "affinity": { "nodeAffinity": %s}}}}}`, string(nodeAffinityBytes))
+	// log.Debugf("patch: %s", patch)
+
+	appsv1 := clientset.AppsV1()
+	for _, deployment := range deploymentsToPatch {
+		_, err := appsv1.Deployments(pa.Namespace).Patch(deployment.Name, types.MergePatchType, []byte(patch))
+		if err != nil {
+			log.WithField("deployment", deployment.Name).WithError(err).Error("error patching deployment")
+			continue
+		}
+	}
+}
