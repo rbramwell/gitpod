@@ -18,6 +18,7 @@ import (
 
 // ServedPort describes a port served by a local service
 type ServedPort struct {
+	Address          string
 	Port             uint32
 	BoundToLocalhost bool
 }
@@ -73,7 +74,10 @@ func (p *PollingServedPortsObserver) Observe(ctx context.Context) (<-chan []Serv
 			case <-ticker.C:
 			}
 
-			var ports []ServedPort
+			var (
+				visited map[string]struct{}
+				ports   []ServedPort
+			)
 			for _, fn := range []string{fnNetTCP, fnNetTCP6} {
 				fc, err := p.fileOpener(fn)
 				if err != nil {
@@ -87,7 +91,19 @@ func (p *PollingServedPortsObserver) Observe(ctx context.Context) (<-chan []Serv
 					errchan <- err
 					continue
 				}
-				ports = append(ports, ps...)
+				for _, port := range ps {
+					key := port.Address + strconv.Itoa(int(port.Port))
+					_, exists := visited[key]
+					if exists {
+						log.WithField("addr", port.Address).WithField("port", port.Port).Error("unexpected duplicate served port")
+						continue
+					}
+					if visited == nil {
+						visited = make(map[string]struct{})
+					}
+					visited[key] = struct{}{}
+					ports = append(ports, port)
+				}
 			}
 
 			if len(ports) > 0 {
@@ -125,6 +141,7 @@ func readNetTCPFile(fc io.Reader, listeningOnly bool) (ports []ServedPort, err e
 
 		ports = append(ports, ServedPort{
 			BoundToLocalhost: !globallyBound,
+			Address:          addr,
 			Port:             uint32(port),
 		})
 	}
