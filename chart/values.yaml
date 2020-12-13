@@ -226,6 +226,9 @@ components:
         servicePort: 3000
     svcLabels:
       feature: registry
+    handover:
+      enabled: true
+      socket: /var/lib/gitpod/registry-facade
     blobserve:
       name: "registry-facade"
       svcName: "blobserve"
