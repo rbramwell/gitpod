@@ -37,7 +37,7 @@ func (pa *PatchDeploymentAffinity) run(clientset *kubernetes.Clientset) {
 			deploymentsToPatch = append(deploymentsToPatch, &deployment)
 		}
 	}
-	log.Debugf("found %d deployments to patch", len(deploymentsToPatch))
+	log.WithField("namespace", pa.Namespace).Debugf("found %d deployments to patch", len(deploymentsToPatch))
 
 	nodeAffinityBytes, err := json.Marshal(pa.NodeAffinity)
 	if err != nil {
@@ -51,7 +51,7 @@ func (pa *PatchDeploymentAffinity) run(clientset *kubernetes.Clientset) {
 	for _, deployment := range deploymentsToPatch {
 		_, err := appsv1.Deployments(pa.Namespace).Patch(deployment.Name, types.MergePatchType, []byte(patch))
 		if err != nil {
-			log.WithField("deployment", deployment.Name).WithError(err).Error("error patching deployment")
+			log.WithField("namespace", pa.Namespace).WithField("deployment", deployment.Name).WithError(err).Error("error patching deployment")
 			continue
 		}
 	}
