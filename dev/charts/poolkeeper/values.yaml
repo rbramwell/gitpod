@@ -1,0 +1,39 @@
+# Default values for sweeper.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+labels:
+  app: poolkeeper
+
+replicaCount: 1
+
+image:
+  repository: eu.gcr.io/gitpod-core-dev/dev/poolkeeper
+  pullPolicy: Always
+
+command: ""
+
+serviceAccount:
+  name: poolkeeper
+
+installPodSecurityPolicies: true
+
+resources:
+  requests:
+    cpu: 10m
+
+securityContext:
+  privileged: false
+  runAsUser: 1000
+
+imagePullSecrets:
+- name: workspace-registry-pull-secret
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: dev/workload
+          operator: In
+          values: ["services"]
