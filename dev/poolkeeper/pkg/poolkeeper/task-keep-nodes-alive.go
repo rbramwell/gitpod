@@ -1,3 +1,7 @@
+// Copyright (c) 2020 TypeFox GmbH. All rights reserved.
+// Licensed under the Gitpod Enterprise Source Code License,
+// See License.enterprise.txt in the project root folder.
+
 package poolkeeper
 
 import (
@@ -37,7 +41,7 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 		LabelSelector: fmt.Sprintf("%s=true", keepNodeAliveMarkerLabel),
 	})
 	if err != nil {
-		log.Errorf("unable to list pods", err)
+		log.WithError(err).Error("unable to list pods")
 		return
 	}
 	currentKeepAlivePods := podList.Items
@@ -48,6 +52,7 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 		namespace = "default"
 	}
 
+	t = t.Local()
 	tod := time.Date(0, 1, 1, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 	start := time.Time(k.PeriodStart)
 	end := time.Time(k.PeriodEnd)
@@ -60,6 +65,7 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 			return
 		}
 
+        uid1000 := int64(1000)
 		v1 := clientset.CoreV1()
 		pod, err := v1.Pods(namespace).Create(&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -74,6 +80,9 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 						Name:    "keepalive",
 						Image:   "bash:latest",
 						Command: []string{"bash", "-c", "while true; do sleep 600; done"},
+                        SecurityContext: &corev1.SecurityContext{
+                            RunAsUser: &uid1000,
+                        },
 					},
 				},
 				NodeSelector: k.NodeSelector,

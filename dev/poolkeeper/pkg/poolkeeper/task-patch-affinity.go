@@ -1,3 +1,7 @@
+// Copyright (c) 2020 TypeFox GmbH. All rights reserved.
+// Licensed under the Gitpod Enterprise Source Code License,
+// See License.enterprise.txt in the project root folder.
+
 package poolkeeper
 
 import (
@@ -26,7 +30,7 @@ type PatchDeploymentAffinity struct {
 func (pa *PatchDeploymentAffinity) run(clientset *kubernetes.Clientset) {
 	deploymentsList, err := clientset.AppsV1().Deployments(pa.Namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorf("unable to list deployments", err)
+		log.WithError(err).Error("unable to list deployments")
 		return
 	}
 	var deploymentsToPatch []*appsv1.Deployment
@@ -41,7 +45,7 @@ func (pa *PatchDeploymentAffinity) run(clientset *kubernetes.Clientset) {
 
 	nodeAffinityBytes, err := json.Marshal(pa.NodeAffinity)
 	if err != nil {
-		log.Errorf("error marshalling NodeAffinity", err)
+		log.WithError(err).Error("error marshalling NodeAffinity")
 		return
 	}
 	patch := fmt.Sprintf(`{"spec": { "template": { "spec": { "affinity": { "nodeAffinity": %s}}}}}`, string(nodeAffinityBytes))

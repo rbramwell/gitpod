@@ -33,7 +33,7 @@
             "dev/workload": "builds"
           },
           "periodStart": "08:00:00",
-          "periodEnd": "08:10:00"
+          "periodEnd": "21:10:00"
         }
       }
     ]
