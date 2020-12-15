@@ -1,0 +1,2 @@
+certificatesSecret:
+    secretName: ${secretName}
