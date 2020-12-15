@@ -65,7 +65,7 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 			return
 		}
 
-        uid1000 := int64(1000)
+		uid1000 := int64(1000)
 		v1 := clientset.CoreV1()
 		pod, err := v1.Pods(namespace).Create(&corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -80,9 +80,9 @@ func (k *KeepNodeAlive) run(clientset *kubernetes.Clientset, t time.Time) {
 						Name:    "keepalive",
 						Image:   "bash:latest",
 						Command: []string{"bash", "-c", "while true; do sleep 600; done"},
-                        SecurityContext: &corev1.SecurityContext{
-                            RunAsUser: &uid1000,
-                        },
+						SecurityContext: &corev1.SecurityContext{
+							RunAsUser: &uid1000,
+						},
 					},
 				},
 				NodeSelector: k.NodeSelector,
